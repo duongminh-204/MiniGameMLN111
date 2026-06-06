@@ -3,20 +3,41 @@ import { AudioManager } from './audio.js';
 import { SettingsManager } from './settings.js';
 import { GameEngine } from './game.js';
 import { UIManager } from './ui.js';
+import { AvatarStorage } from './avatar-storage.js';
+import { AvatarUIManager } from './avatar-ui.js';
+import { EffectsManager } from './effects.js';
 
 const settings = new SettingsManager();
 const audio = new AudioManager(settings.data);
 const game = new GameEngine();
-const ui = new UIManager(game, audio, settings);
+const avatarStorage = new AvatarStorage();
+const effects = new EffectsManager(settings);
+const ui = new UIManager(game, audio, settings, avatarStorage, effects);
+const avatarUi = new AvatarUIManager(avatarStorage, effects, settings);
 
 function applySettings() {
   document.body.classList.toggle('no-anim', !settings.get('animations'));
+  ui.quizAvatar?.setEnabled(settings.get('animations'));
+  ui.endAvatar?.setEnabled(settings.get('animations'));
+  avatarUi.previewCtrl?.setEnabled(settings.get('animations'));
+  avatarUi.profileCtrl?.setEnabled(settings.get('animations'));
   if (settings.get('music') && !audio.bgmOn) audio.startBGM();
   else if (!settings.get('music')) audio.stopBGM();
   ui.syncMusicBtn();
 }
 
+function requireAvatar(action) {
+  if (!avatarStorage.hasAvatar()) {
+    avatarUi.openCreator();
+    avatarUi.onSave = action;
+    return false;
+  }
+  return true;
+}
+
 function startQuiz() {
+  if (!requireAvatar(() => startQuiz())) return;
+
   const name = (ui.els['player-name']?.value || settings.get('name') || '').trim();
   const stage = game.stage;
   game.reset();
@@ -51,7 +72,6 @@ function handleTimeout() {
   if (!result) return;
   audio.wrong();
   ui.revealAnswer(result, null);
-  ui.updateHUD();
 }
 
 function handleAnswer(choiceIndex, clickedBtn) {
@@ -66,7 +86,6 @@ function handleAnswer(choiceIndex, clickedBtn) {
     else audio.wrong();
 
     ui.revealAnswer(result, clickedBtn);
-    ui.updateHUD();
   }, 280);
 }
 
@@ -80,7 +99,7 @@ function goNext() {
   }
   if (next === 'end') {
     game.stagesDone = [0, 1, 2];
-    ui.showEndScreen();
+    ui.showEndScreen(avatarUi);
     return;
   }
 
@@ -153,6 +172,46 @@ function bindEvents() {
   ui.els['btn-back']?.addEventListener('click', backToStart);
   ui.els['btn-back-end']?.addEventListener('click', backToStart);
 
+  ui.els['btn-create-avatar']?.addEventListener('click', () => {
+    audio.click();
+    avatarUi.onSave = null;
+    avatarUi.openCreator();
+  });
+
+  ui.els['btn-profile']?.addEventListener('click', () => {
+    audio.click();
+    if (!avatarStorage.hasAvatar()) {
+      avatarUi.openCreator();
+      return;
+    }
+    avatarUi.openProfile();
+  });
+
+  $('btn-creator-save')?.addEventListener('click', () => {
+    audio.click();
+    avatarUi.saveCreator();
+  });
+
+  $('btn-creator-back')?.addEventListener('click', () => {
+    audio.click();
+    ui.showScreen('screen-start');
+  });
+
+  $('btn-profile-back')?.addEventListener('click', () => {
+    audio.click();
+    ui.showScreen('screen-start');
+    ui.renderStartAvatarPreview();
+  });
+
+  $('btn-profile-edit')?.addEventListener('click', () => {
+    audio.click();
+    avatarUi.onSave = () => {
+      ui.renderStartAvatarPreview();
+      avatarUi.openProfile();
+    };
+    avatarUi.openCreator();
+  });
+
   ui.els['btn-settings-start']?.addEventListener('click', () => ui.openSettings());
   ui.els['btn-settings-quiz']?.addEventListener('click', () => ui.openSettings());
   ui.els['settings-close']?.addEventListener('click', () => ui.closeSettings());
@@ -176,8 +235,12 @@ function bindEvents() {
   ui.bindAnswerClicks(handleAnswer);
 }
 
+const $ = (id) => document.getElementById(id);
+
 document.addEventListener('DOMContentLoaded', () => {
   ui.init();
+  avatarUi.init();
+  avatarUi.onSave = () => ui.renderStartAvatarPreview();
   bindEvents();
 
   const savedName = settings.get('name');
@@ -186,11 +249,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (ui.els['player-name']) ui.els['player-name'].value = savedName;
   }
 
-  const totalEl = document.querySelector('[data-total-questions]');
-  if (totalEl) totalEl.textContent = getTotalQuestions();
+  document.querySelectorAll('[data-total-questions]').forEach((el) => {
+    el.textContent = getTotalQuestions();
+  });
 
   applySettings();
   ui.showScreen('screen-start');
+
+  if (!avatarStorage.hasAvatar()) {
+    setTimeout(() => avatarUi.openCreator(), 600);
+  }
 
   document.addEventListener('click', () => {
     if (settings.get('music') && !audio.bgmOn) audio.startBGM();

@@ -13,6 +13,8 @@ export class GameEngine {
     this.correct = 0;
     this.answered = false;
     this.stagesDone = [];
+    this.streak = 0;
+    this.maxStreak = 0;
     this.timerLeft = CONFIG.TIMER_SEC;
     this.timerId = null;
     this.onTimeout = null;
@@ -89,12 +91,20 @@ export class GameEngine {
 
     if (isCorrect) {
       this.correct++;
+      this.streak++;
+      if (this.streak > this.maxStreak) this.maxStreak = this.streak;
       const speedBonus = this.timerLeft > CONFIG.TIMER_SEC * 0.5 ? CONFIG.POINTS_SPEED_BONUS : 0;
-      points = CONFIG.POINTS_BASE + speedBonus;
+      const streakBonus = this.streak >= 3 ? 25 : 0;
+      points = CONFIG.POINTS_BASE + speedBonus + streakBonus;
       this.score += points;
+    } else {
+      this.streak = 0;
     }
 
-    return { isCorrect, points, explanation: q.exp, correctIndex: q.a };
+    return {
+      isCorrect, points, explanation: q.exp, correctIndex: q.a,
+      streak: this.streak, isPerfectStreak: this.streak >= 3,
+    };
   }
 
   canGoNext() {

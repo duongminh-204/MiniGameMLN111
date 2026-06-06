@@ -1,23 +1,61 @@
 import { STAGES, CONFIG, getTotalQuestions } from './data.js';
+import { ACHIEVEMENTS } from './avatar-data.js';
+import { AvatarController } from './avatar-controller.js';
 
 const $ = (id) => document.getElementById(id);
 
-const SCREENS = ['screen-start', 'screen-quiz', 'screen-stage', 'screen-end'];
+const SCREENS = [
+  'screen-start', 'screen-creator', 'screen-profile',
+  'screen-quiz', 'screen-stage', 'screen-end',
+];
 
 export class UIManager {
-  constructor(game, audio, settings) {
+  constructor(game, audio, settings, avatarStorage, effects) {
     this.game = game;
     this.audio = audio;
     this.settings = settings;
+    this.avatarStorage = avatarStorage;
+    this.effects = effects;
     this.els = {};
     this.scoreAnimId = null;
     this.displayedScore = 0;
+    this.quizAvatar = null;
+    this.endAvatar = null;
   }
 
   init() {
     this.cacheElements();
     this.buildParticles();
     this.renderStageCards();
+    this.initAvatars();
+    this.renderStartAvatarPreview();
+  }
+
+  initAvatars() {
+    const quizEl = $('quiz-avatar');
+    const endEl = $('end-avatar');
+    if (quizEl) {
+      this.quizAvatar = new AvatarController(quizEl, this.effects);
+      this.quizAvatar.setEnabled(this.settings.get('animations'));
+    }
+    if (endEl) {
+      this.endAvatar = new AvatarController(endEl, this.effects);
+      this.endAvatar.setEnabled(this.settings.get('animations'));
+    }
+  }
+
+  mountQuizAvatar() {
+    const av = this.avatarStorage.getAvatar();
+    this.quizAvatar?.init(av, av.skinId);
+    this.updateStreakBadge(0);
+  }
+
+  renderStartAvatarPreview() {
+    const el = $('start-avatar-mini');
+    if (!el || !this.avatarStorage.hasAvatar()) return;
+    const av = this.avatarStorage.getAvatar();
+    const ctrl = new AvatarController(el, this.effects);
+    ctrl.init(av, av.skinId);
   }
 
   cacheElements() {
@@ -29,20 +67,39 @@ export class UIManager {
       'timer-progress', 'settings-overlay', 'set-name', 'set-music', 'set-sfx',
       'set-volume', 'vol-label', 'set-anim', 'settings-close', 'set-save', 'set-reset',
       'stage-clear-icon', 'stage-clear-title', 'stage-clear-sub', 'stage-clear-score',
-      'btn-stage-continue', 'end-trophy', 'end-title', 'end-player', 'end-score',
+      'btn-stage-continue', 'end-title', 'end-player', 'end-score',
       'end-percent', 'end-correct', 'end-rank-grade', 'end-rank-msg', 'leaderboard',
-      'btn-play-again', 'btn-back-end',
+      'btn-play-again', 'btn-back-end', 'quiz-hero-name', 'streak-badge',
+      'btn-create-avatar', 'btn-profile',
     ];
     ids.forEach((id) => { this.els[id] = $(id); });
   }
 
   showScreen(id) {
     SCREENS.forEach((s) => $(s)?.classList.toggle('active', s === id));
+    if (id === 'screen-quiz') this.mountQuizAvatar();
+    if (id === 'screen-start') this.renderStartAvatarPreview();
+  }
+
+  updateStreakBadge(streak) {
+    const badge = this.els['streak-badge'];
+    if (!badge) return;
+    if (streak >= 3) {
+      badge.textContent = `🔥 Chuỗi ${streak}!`;
+      badge.classList.add('show', 'fire');
+    } else if (streak >= 2) {
+      badge.textContent = `⚡ ${streak} liên tiếp`;
+      badge.classList.add('show');
+      badge.classList.remove('fire');
+    } else {
+      badge.classList.remove('show', 'fire');
+    }
   }
 
   buildParticles() {
     const wrap = this.els.particles;
     if (!wrap || !this.settings.get('animations')) return;
+    wrap.innerHTML = '';
     for (let i = 0; i < 40; i++) {
       const p = document.createElement('div');
       p.className = 'particle';
@@ -109,6 +166,9 @@ export class UIManager {
     if (this.els['stage-label']) {
       this.els['stage-label'].textContent = `Chặng ${st.id}: ${st.label}`;
     }
+    if (this.els['quiz-hero-name']) {
+      this.els['quiz-hero-name'].textContent = g.name;
+    }
     if (this.els['progress-fill']) {
       this.els['progress-fill'].style.width = `${g.progressPercent}%`;
     }
@@ -116,6 +176,7 @@ export class UIManager {
       this.els['progress-text'].textContent =
         `Câu ${g.globalQuestionIndex + 1} / ${total} · ${g.progressPercent}%`;
     }
+    this.updateStreakBadge(g.streak);
     this.animateScore(g.score);
   }
 
@@ -142,6 +203,8 @@ export class UIManager {
     const st = g.currentStage;
     if (!q) return;
 
+    this.quizAvatar?.setState('idle');
+
     const qCard = document.querySelector('.question-card');
     const aWrap = document.querySelector('.answers-wrap');
     qCard?.classList.remove('visible');
@@ -149,8 +212,7 @@ export class UIManager {
 
     setTimeout(() => {
       if (this.els['question-num']) {
-        this.els['question-num'].textContent =
-          `Câu ${g.qi + 1} · Chặng ${st.id}`;
+        this.els['question-num'].textContent = `Câu ${g.qi + 1} · Chặng ${st.id}`;
       }
       if (this.els['question-text']) {
         this.els['question-text'].textContent = q.q;
@@ -159,17 +221,14 @@ export class UIManager {
       const shuffled = q.ch.map((c, i) => ({ c, orig: i }))
         .sort(() => Math.random() - 0.5);
 
-      const letters = CONFIG.LETTERS;
-      const shapes = CONFIG.ANSWER_SHAPES;
       const grid = this.els['answers-grid'];
-
       if (grid) {
         grid.innerHTML = shuffled.map((item, i) => {
           const cls = ['a', 'b', 'c', 'd'][i];
           return `
             <button class="answer-btn answer-btn--${cls}" data-orig="${item.orig}" type="button">
-              <span class="answer-btn__shape">${shapes[i]}</span>
-              <span class="answer-btn__text"><strong>${letters[i]}.</strong> ${item.c}</span>
+              <span class="answer-btn__shape">${CONFIG.ANSWER_SHAPES[i]}</span>
+              <span class="answer-btn__text"><strong>${CONFIG.LETTERS[i]}.</strong> ${item.c}</span>
             </button>`;
         }).join('');
       }
@@ -209,6 +268,12 @@ export class UIManager {
       else btn.classList.add('faded');
     });
 
+    if (result.isCorrect) {
+      this.quizAvatar?.onCorrect(result.streak);
+    } else {
+      this.quizAvatar?.onWrong();
+    }
+
     const fb = this.els.feedback;
     if (fb) {
       fb.className = `feedback ${result.isCorrect ? 'feedback--ok' : 'feedback--fail'}`;
@@ -229,6 +294,8 @@ export class UIManager {
       }
       next.style.display = 'inline-flex';
     }
+
+    this.updateHUD();
   }
 
   showStageClear() {
@@ -245,12 +312,16 @@ export class UIManager {
     if (this.els['stage-clear-score']) {
       this.els['stage-clear-score'].textContent = `${g.score} điểm`;
     }
+    this.avatarStorage.checkUnlocks(g);
     this.showScreen('screen-stage');
   }
 
-  showEndScreen() {
+  showEndScreen(avatarUi) {
     const g = this.game;
-    const { pct, rank, score, correct, total } = g.getResults();
+    const results = g.getResults();
+    const { pct, rank, score, correct, total } = results;
+
+    this.avatarStorage.checkUnlocks(g, results);
 
     if (this.els['end-player']) this.els['end-player'].textContent = g.name;
     if (this.els['end-score']) this.els['end-score'].textContent = score;
@@ -258,6 +329,10 @@ export class UIManager {
     if (this.els['end-correct']) this.els['end-correct'].textContent = `${correct}/${total}`;
     if (this.els['end-rank-grade']) this.els['end-rank-grade'].textContent = rank.grade;
     if (this.els['end-rank-msg']) this.els['end-rank-msg'].textContent = rank.msg;
+
+    const av = this.avatarStorage.getAvatar();
+    this.endAvatar?.init(av, av.skinId);
+    setTimeout(() => this.endAvatar?.onVictory(), 400);
 
     const lb = this.els.leaderboard;
     if (lb) {
@@ -272,6 +347,14 @@ export class UIManager {
 
     this.showScreen('screen-end');
     this.audio.fanfare();
+    this.effects.spawn($('end-fx'), 'victory', 50);
+
+    if (g.maxStreak >= 5 && this.avatarStorage.unlockAchievement('streak5')) {
+      avatarUi?.showAchievement(ACHIEVEMENTS.streak5);
+    }
+    if (this.avatarStorage.unlockAchievement('first_win')) {
+      setTimeout(() => avatarUi?.showAchievement(ACHIEVEMENTS.first_win), 1500);
+    }
   }
 
   openSettings() {

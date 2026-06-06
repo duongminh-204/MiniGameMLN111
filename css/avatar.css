@@ -1,0 +1,378 @@
+/* ═══ RPG AVATAR SPRITE SYSTEM ═══ */
+
+.avatar-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 280px;
+}
+
+.avatar {
+  position: relative;
+  width: 160px;
+  height: 200px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  transform-origin: bottom center;
+}
+
+.avatar__sprite {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35));
+  transform: scale(var(--scale, 1));
+}
+
+.avatar__platform {
+  position: absolute;
+  bottom: 0;
+  width: 120px;
+  height: 20px;
+  background: radial-gradient(ellipse, rgba(0,0,0,.35) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.avatar__aura {
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.avatar--streak .avatar__aura--fire,
+.avatar--victory .avatar__aura--fire,
+.avatar__aura--fire.avatar__aura--active {
+  opacity: 1;
+  background: radial-gradient(circle, rgba(255,100,0,.4) 0%, transparent 70%);
+  animation: auraFire 0.6s ease infinite;
+}
+
+.avatar--streak .avatar__aura--glow,
+.avatar__aura--glow { opacity: 0; }
+.avatar--streak .avatar__aura--golden,
+.skin-golden.avatar--idle .avatar__aura--golden {
+  opacity: 1;
+  background: radial-gradient(circle, rgba(253,203,110,.5) 0%, transparent 65%);
+  animation: auraGlow 2s ease infinite;
+}
+
+.avatar--streak .avatar__aura--flag,
+.avatar__aura--flag { opacity: 0; }
+
+.avatar__speech {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%) scale(0.8);
+  background: #fff;
+  color: #2d3436;
+  padding: 8px 14px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+  opacity: 0;
+  transition: opacity 0.25s, transform 0.25s var(--ease-spring);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.avatar__speech::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top-color: #fff;
+}
+
+.avatar__speech.show {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+.avatar__fx {
+  position: absolute;
+  inset: -30px;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* ── Animation states ── */
+.avatar--idle .avatar__body-group {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+.avatar--idle .avatar__head-group {
+  animation: headBob 3s ease-in-out infinite;
+}
+
+.avatar--blink .avatar__eyes {
+  transform: scaleY(0.1);
+  transform-origin: center;
+}
+
+.avatar--happy,
+.avatar--jump {
+  animation: jumpHappy 0.6s var(--ease-spring);
+}
+
+.avatar--sad,
+.avatar--damage {
+  animation: headShake 0.55s ease;
+}
+
+.avatar--damage .avatar__sprite {
+  filter: drop-shadow(0 0 12px rgba(232,67,147,.6)) drop-shadow(0 8px 16px rgba(0,0,0,.35));
+}
+
+.avatar--streak {
+  animation: streakBounce 0.5s ease infinite;
+}
+
+.avatar--victory {
+  animation: victoryDance 1.2s ease infinite;
+}
+
+.avatar--victory .avatar__arm-l {
+  animation: armWave 0.4s ease infinite alternate;
+  transform-origin: top center;
+}
+
+.avatar--victory .avatar__arm-r {
+  animation: armWave 0.4s ease infinite alternate-reverse;
+  transform-origin: top center;
+}
+
+/* Skin visual modifiers */
+.skin-warrior .avatar__sprite { filter: drop-shadow(0 0 8px rgba(192,57,43,.4)) drop-shadow(0 8px 16px rgba(0,0,0,.35)); }
+.skin-scholar .avatar__sprite { filter: drop-shadow(0 0 8px rgba(39,174,96,.35)) drop-shadow(0 8px 16px rgba(0,0,0,.35)); }
+.skin-revolutionary .avatar__sprite { filter: drop-shadow(0 0 12px rgba(142,68,173,.5)) drop-shadow(0 8px 16px rgba(0,0,0,.35)); }
+.skin-golden .avatar__sprite { filter: drop-shadow(0 0 16px rgba(243,156,18,.6)) drop-shadow(0 8px 16px rgba(0,0,0,.35)); }
+
+/* ── Effects ── */
+.fx-sparkle {
+  position: absolute;
+  font-size: 18px;
+  animation: fxSparkle 0.9s ease forwards;
+}
+
+.fx-confetti {
+  position: absolute;
+  top: 0;
+  border-radius: 2px;
+  animation: fxConfetti 1.5s ease forwards;
+}
+
+.fx-damage {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 36px;
+  animation: fxDamage 0.7s ease forwards;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.03); }
+}
+
+@keyframes headBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes jumpHappy {
+  0% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-28px) scale(1.05); }
+  55% { transform: translateY(-12px) scale(1.02); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes headShake {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-6deg); }
+  40% { transform: rotate(6deg); }
+  60% { transform: rotate(-4deg); }
+  80% { transform: rotate(4deg); }
+}
+
+@keyframes streakBounce {
+  0%, 100% { transform: translateY(0) scale(1.05); }
+  50% { transform: translateY(-12px) scale(1.08); }
+}
+
+@keyframes victoryDance {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  25% { transform: translateY(-16px) rotate(-5deg); }
+  75% { transform: translateY(-16px) rotate(5deg); }
+}
+
+@keyframes armWave {
+  from { transform: rotate(-15deg); }
+  to { transform: rotate(25deg); }
+}
+
+@keyframes auraFire {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+@keyframes auraGlow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.9; }
+}
+
+@keyframes fxSparkle {
+  0% { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(0) translateY(-40px); }
+}
+
+@keyframes fxConfetti {
+  0% { opacity: 1; transform: translateY(0) rotate(0); }
+  100% { opacity: 0; transform: translateY(120px) rotate(720deg); }
+}
+
+@keyframes fxDamage {
+  0% { opacity: 1; transform: translateX(-50%) scale(0.5); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.2); }
+  100% { opacity: 0; transform: translateX(-50%) scale(0.8) translateY(-20px); }
+}
+
+/* ── Creator & Profile ── */
+.creator-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  width: 100%;
+  max-width: 900px;
+  align-items: start;
+}
+
+.creator-preview {
+  padding: 28px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-height: 360px;
+  justify-content: center;
+}
+
+.creator-options {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.option-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.option-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.opt-btn {
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background: rgba(255,255,255,.08);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--dur-fast);
+}
+
+.opt-btn:hover { background: rgba(255,255,255,.15); }
+
+.opt-btn.active {
+  border-color: var(--color-accent);
+  background: rgba(253,203,110,.15);
+}
+
+.opt-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: transform var(--dur-fast), border-color var(--dur-fast);
+}
+
+.opt-swatch:hover { transform: scale(1.1); }
+.opt-swatch.active { border-color: #fff; box-shadow: 0 0 0 2px var(--color-accent); }
+
+.skin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 700px;
+}
+
+.skin-card {
+  padding: 16px 12px;
+  border-radius: var(--radius-md);
+  text-align: center;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all var(--dur-fast);
+  position: relative;
+}
+
+.skin-card:hover:not(.locked) { transform: translateY(-4px); }
+.skin-card.active { border-color: var(--color-accent); background: rgba(253,203,110,.1); }
+.skin-card.locked { opacity: 0.5; cursor: not-allowed; }
+
+.skin-card__icon { font-size: 32px; margin-bottom: 6px; }
+.skin-card__name { font-size: 13px; font-weight: 700; }
+.skin-card__desc { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+.skin-card__lock { position: absolute; top: 8px; right: 8px; font-size: 14px; }
+
+.achievement-popup {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 2000;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transform: translateX(120%);
+  transition: transform 0.4s var(--ease-spring);
+  max-width: 320px;
+}
+
+.achievement-popup.show { transform: translateX(0); }
+.achievement-popup__icon { font-size: 32px; }
+.achievement-popup__title { font-size: 14px; font-weight: 800; }
+.achievement-popup__desc { font-size: 12px; color: var(--text-secondary); }
+
+@media (max-width: 768px) {
+  .creator-layout { grid-template-columns: 1fr; }
+  .avatar { width: 130px; height: 170px; }
+  .avatar-wrap { min-height: 200px; }
+}
