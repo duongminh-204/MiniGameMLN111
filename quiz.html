@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hành Trình Cách Mạng — Quiz MLN</title>
+  <meta name="description" content="Quiz game Triết học Mác-Lênin — 15 câu hỏi, 3 chặng">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔</text></svg>">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <div class="bg-layer" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb--1" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb--2" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb--3" aria-hidden="true"></div>
+  <div id="particles" aria-hidden="true"></div>
+
+  <div id="app">
+    <h1 class="sr-only">Quiz Triết học Mác-Lênin</h1>
+
+    <!-- ═══ START SCREEN ═══ -->
+    <section id="screen-start" class="screen active">
+      <div class="start-top-actions">
+        <button class="btn-icon" id="btn-music" type="button" title="Nhạc nền">🎵</button>
+        <button class="btn-icon" id="btn-settings-start" type="button" title="Cài đặt">⚙</button>
+      </div>
+
+      <div class="start-container">
+        <div class="start-logo anim-scale-in">⚔</div>
+        <h2 class="start-title anim-slide-up anim-delay-1">Hành Trình Cách Mạng</h2>
+        <p class="start-subtitle anim-slide-up anim-delay-2">
+          Triết học Mác-Lênin · Chương III · IV · V<br>
+          Trả lời <strong data-total-questions>15</strong> câu hỏi — chinh phục 3 chặng!
+        </p>
+
+        <div class="start-stats anim-slide-up anim-delay-3">
+          <div class="start-stat glass">
+            <div class="start-stat__n">3</div>
+            <div class="start-stat__l">Chặng</div>
+          </div>
+          <div class="start-stat glass">
+            <div class="start-stat__n" data-total-questions>15</div>
+            <div class="start-stat__l">Câu hỏi</div>
+          </div>
+          <div class="start-stat glass">
+            <div class="start-stat__n">30s</div>
+            <div class="start-stat__l">Mỗi câu</div>
+          </div>
+        </div>
+
+        <div id="stage-cards" class="stage-cards anim-slide-up anim-delay-3"></div>
+
+        <div class="start-form anim-slide-up anim-delay-4">
+          <input type="text" id="player-name" class="input" placeholder="Tên nhà cách mạng..." maxlength="18" autocomplete="nickname">
+          <button class="btn btn-primary btn-lg" id="btn-start" type="button">▶ Bắt đầu chơi</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ QUIZ SCREEN ═══ -->
+    <section id="screen-quiz" class="screen">
+      <header class="quiz-header glass">
+        <button class="btn-icon" id="btn-back" type="button" title="Về trang chủ">←</button>
+
+        <div class="quiz-header__info">
+          <div class="quiz-header__stage" id="stage-label">Chặng 1</div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+          </div>
+          <div class="quiz-header__progress-text" id="progress-text">Câu 1 / 15</div>
+        </div>
+
+        <div class="timer-ring" id="timer-ring">
+          <svg viewBox="0 0 64 64">
+            <circle class="timer-ring__bg" cx="32" cy="32" r="28"/>
+            <circle class="timer-ring__progress" id="timer-progress" cx="32" cy="32" r="28"/>
+          </svg>
+          <span class="timer-ring__value" id="timer-value">30</span>
+        </div>
+
+        <div class="score-badge" id="score-badge">
+          🪙 <span id="score-value">0</span>
+        </div>
+
+        <button class="btn-icon" id="btn-settings-quiz" type="button" title="Cài đặt">⚙</button>
+      </header>
+
+      <main class="quiz-main">
+        <div class="quiz-content">
+          <article class="question-card glass">
+            <span class="question-card__num" id="question-num">Câu 1</span>
+            <p class="question-card__text" id="question-text"></p>
+          </article>
+
+          <div class="answers-wrap">
+            <div class="answers-grid" id="answers-grid"></div>
+            <div id="feedback"></div>
+            <button class="btn btn-primary" id="btn-next" type="button" style="display:none;margin-top:16px;width:100%">Câu tiếp theo →</button>
+          </div>
+        </div>
+
+        <div class="loader-overlay" id="loader">
+          <div class="loader">
+            <div class="loader__spinner"></div>
+            <p class="loader__text">Đang tải câu hỏi...</p>
+          </div>
+        </div>
+      </main>
+    </section>
+
+    <!-- ═══ STAGE CLEAR ═══ -->
+    <section id="screen-stage" class="screen">
+      <div class="stage-clear-card glass anim-scale-in">
+        <div class="stage-clear-card__icon" id="stage-clear-icon">🎖</div>
+        <h2 class="stage-clear-card__title" id="stage-clear-title">Chặng hoàn thành!</h2>
+        <p class="stage-clear-card__sub" id="stage-clear-sub"></p>
+        <div class="stage-clear-card__score" id="stage-clear-score">0 điểm</div>
+        <button class="btn btn-primary btn-lg" id="btn-stage-continue" type="button">Tiếp tục hành trình →</button>
+      </div>
+    </section>
+
+    <!-- ═══ END SCREEN ═══ -->
+    <section id="screen-end" class="screen">
+      <div class="end-card glass anim-scale-in">
+        <div class="end-trophy" id="end-trophy">🏆</div>
+        <h2 class="end-title" id="end-title">Hành trình hoàn thành!</h2>
+        <p class="end-player" id="end-player"></p>
+
+        <div class="end-stats-grid">
+          <div class="end-stat glass">
+            <div class="end-stat__n" id="end-score">0</div>
+            <div class="end-stat__l">Tổng điểm</div>
+          </div>
+          <div class="end-stat glass">
+            <div class="end-stat__n" id="end-percent">0%</div>
+            <div class="end-stat__l">Tỷ lệ đúng</div>
+          </div>
+          <div class="end-stat glass">
+            <div class="end-stat__n" id="end-correct">0/15</div>
+            <div class="end-stat__l">Câu đúng</div>
+          </div>
+        </div>
+
+        <div class="end-rank-box glass">
+          <div class="end-rank-grade" id="end-rank-grade">A</div>
+          <p class="end-rank-msg" id="end-rank-msg"></p>
+        </div>
+
+        <div class="end-leaderboard glass">
+          <h3>🏆 Bảng xếp hạng</h3>
+          <div id="leaderboard"></div>
+        </div>
+
+        <div class="end-actions">
+          <button class="btn btn-primary" id="btn-play-again" type="button">↺ Chơi lại</button>
+          <button class="btn btn-secondary" id="btn-back-end" type="button">🏠 Trang chủ</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ═══ SETTINGS MODAL ═══ -->
+  <div id="settings-overlay" class="modal-overlay" aria-hidden="true">
+    <div class="modal glass" role="dialog" aria-labelledby="settings-title">
+      <header class="modal__header">
+        <h2 id="settings-title">⚙ Cài đặt</h2>
+        <button class="btn-icon" id="settings-close" type="button">✕</button>
+      </header>
+      <div class="modal__body">
+        <label class="setting-row__label" for="set-name">Tên người chơi</label>
+        <input type="text" id="set-name" class="input" style="margin-bottom:16px" maxlength="18">
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-row__label">🎵 Nhạc nền</div>
+            <div class="setting-row__hint">Nhạc khi chơi</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="set-music" checked><span class="toggle__slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-row__label">🔊 Hiệu ứng âm thanh</div>
+            <div class="setting-row__hint">Đúng / sai / click</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="set-sfx" checked><span class="toggle__slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-row__label">✨ Hiệu ứng hình ảnh</div>
+            <div class="setting-row__hint">Animation & particles</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="set-anim" checked><span class="toggle__slider"></span></label>
+        </div>
+
+        <label class="setting-row__label" for="set-volume" style="margin-top:12px">🔉 Âm lượng — <span id="vol-label">80%</span></label>
+        <input type="range" id="set-volume" class="vol-slider" min="0" max="100" value="80">
+
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px">
+          <button class="btn btn-secondary" id="set-reset" type="button">↺ Đặt lại tiến độ</button>
+          <button class="btn btn-primary" id="set-save" type="button">💾 Lưu cài đặt</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
